@@ -1,0 +1,7 @@
+{
+  "name": "Let's take a moment",
+  "description": "Create, customize, and print your own mini flipbooks with AI-generated cover art.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

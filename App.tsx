@@ -6,7 +6,7 @@ import { FrameSelector } from './components/FrameSelector';
 import { FlipbookPreview } from './components/FlipbookPreview';
 import { PrintLayout } from './components/PrintLayout';
 import { CoverGenerator } from './components/CoverGenerator';
-import { Camera, RefreshCcw, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initAudio, playClick } from './utils/sound';
 
@@ -47,10 +47,23 @@ const App: React.FC = () => {
     setStep(AppStep.PRINT);
   };
 
-  const resetApp = () => {
-    if (window.confirm("Start over? Current session will be lost.")) {
-      setStep(AppStep.LANDING);
-      setFlipbookData({ frames: [], coverImage: null, timestamp: Date.now() });
+  const handleBack = () => {
+    playClick();
+    switch (step) {
+      case AppStep.SETUP:
+        setStep(AppStep.LANDING);
+        break;
+      case AppStep.CAPTURE:
+        setStep(AppStep.SETUP);
+        break;
+      case AppStep.PREVIEW:
+        setStep(AppStep.CAPTURE);
+        break;
+      case AppStep.PRINT:
+        setStep(AppStep.PREVIEW);
+        break;
+      default:
+        break;
     }
   };
 
@@ -67,7 +80,7 @@ const App: React.FC = () => {
       y: 0, 
       filter: 'blur(0px)',
       scale: 1,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } // Custom bezier for "smooth" feel
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } 
     },
     exit: { 
       opacity: 0, 
@@ -82,18 +95,14 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-neutral-50 text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white overflow-x-hidden">
       {/* Minimal Header - Hidden on Landing Page */}
       {step !== AppStep.LANDING && (
-        <header className="w-full py-8 px-6 flex justify-between items-center max-w-4xl mx-auto z-50 animate-in fade-in slide-in-from-top-4 duration-700">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-neutral-900 text-white flex items-center justify-center rounded-sm">
-              <Camera className="w-4 h-4" />
-            </div>
-            <h1 className="text-lg font-semibold tracking-wider uppercase">Let's take a moment.</h1>
-          </div>
+        <header className="w-full py-8 px-6 flex justify-start items-center max-w-4xl mx-auto z-50 animate-in fade-in slide-in-from-top-4 duration-700">
           <button 
-            onClick={resetApp}
-            className="text-xs font-medium text-neutral-400 hover:text-neutral-900 uppercase tracking-widest transition-colors flex items-center gap-2"
+            onClick={handleBack}
+            className="group flex items-center gap-2 text-neutral-400 hover:text-neutral-900 transition-colors"
+            aria-label="Go back"
           >
-            <RefreshCcw className="w-3 h-3" /> Reset
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] pt-0.5">Back</span>
           </button>
         </header>
       )}
@@ -137,7 +146,7 @@ const App: React.FC = () => {
               className="w-full max-w-2xl"
             >
                <div className="mb-12 text-center">
-                  <h3 className="text-2xl font-light">Select Framework</h3>
+                  <h3 className="text-2xl font-light">Select Frame of Flipbook</h3>
                </div>
                <FrameSelector selectedFrame={selectedFrame} onSelect={handleFrameSelect} />
             </motion.div>

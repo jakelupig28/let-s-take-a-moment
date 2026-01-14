@@ -57,16 +57,11 @@ export const FrameSelector: React.FC<FrameSelectorProps> = ({ selectedFrame, onS
                    )}
                 </div>
               </div>
-
-              {/* Active Indicator Dot */}
-              {isSelected && (
-                <div className="absolute -bottom-3 w-1 h-1 bg-neutral-900 rounded-full animate-in fade-in zoom-in"></div>
-              )}
             </div>
 
             {/* Label */}
             <div className="flex flex-col gap-1 items-center">
-              <span className={`text-xs uppercase tracking-[0.2em] font-medium transition-colors ${isSelected ? 'text-neutral-900' : 'text-neutral-400'}`}>
+              <span className={`text-[10px] uppercase tracking-[0.3em] font-semibold transition-colors ${isSelected ? 'text-neutral-900' : 'text-neutral-400'}`}>
                 {style.name}
               </span>
             </div>

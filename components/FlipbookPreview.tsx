@@ -24,9 +24,9 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
         className="relative bg-white overflow-hidden shadow-lg"
         style={{
           width: '320px',
-          height: '320px',
-          border: `${frameStyle.borderWidth}px solid ${frameStyle.borderColor}`,
+          height: '180px', // 16:9 Aspect Ratio (320 / 1.777)
           borderRadius: `${frameStyle.borderRadius}px`
+          // Note: Border color is now part of the image itself, so we don't add a border here.
         }}
       >
         <img 
@@ -34,7 +34,9 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
           alt={`Frame ${currentIndex}`} 
           className="w-full h-full object-cover grayscale-[10%]"
         />
-        <div className="absolute bottom-4 right-4 text-[10px] tracking-widest text-neutral-500 bg-white/80 px-2 py-1 backdrop-blur-sm">
+        
+        {/* Frame Counter - Matching the aesthetic reference */}
+        <div className="absolute bottom-4 right-4 text-[10px] font-medium tracking-widest text-neutral-900 bg-white px-3 py-1.5 shadow-sm">
           {currentIndex + 1} — {data.frames.length}
         </div>
       </div>

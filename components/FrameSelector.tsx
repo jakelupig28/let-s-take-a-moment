@@ -12,8 +12,8 @@ export const FrameSelector: React.FC<FrameSelectorProps> = ({ selectedFrame, onS
     <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8 w-full max-w-4xl px-4">
       {FRAME_STYLES.map((style) => {
         const isSelected = selectedFrame.id === style.id;
-        // Scale down the border width for the preview (approx 1/2.5 scale)
-        const previewBorderWidth = Math.max(3, Math.round(style.borderWidth / 2.5)); 
+        // Scale down the border width for the small preview (approx 1/4 - 1/5 scale)
+        const scaledPadding = Math.max(2, Math.round(style.borderWidth / 4)); 
         const previewBorderRadius = Math.max(0, Math.round(style.borderRadius / 2.5));
 
         return (
@@ -28,30 +28,33 @@ export const FrameSelector: React.FC<FrameSelectorProps> = ({ selectedFrame, onS
             {/* Preview Container */}
             <div 
               className={`
-                relative w-36 h-36 flex items-center justify-center bg-white shadow-sm transition-all duration-500 ease-out
-                ${isSelected ? 'scale-105 shadow-xl ring-1 ring-neutral-900/5' : 'group-hover:scale-105 group-hover:shadow-md'}
+                relative w-36 h-20 flex items-center justify-center transition-all duration-500 ease-out
+                ${isSelected ? 'scale-105' : 'group-hover:scale-105'}
               `}
             >
-              {/* The Frame Visualization */}
+              {/* The Frame Visualization - 16:9 Aspect Ratio Card */}
               <div 
-                className="relative w-24 h-24 overflow-hidden shadow-sm transition-all duration-300 bg-white"
+                className="relative w-28 h-[3.9375rem] overflow-hidden shadow-sm transition-all duration-300 flex ring-1 ring-black/5"
                 style={{
-                  borderStyle: 'solid',
-                  borderColor: style.borderColor,
-                  borderWidth: `${previewBorderWidth}px`,
                   borderRadius: `${previewBorderRadius}px`,
-                  // Ensure white frames are visible against the white bg via a subtle shadow
-                  boxShadow: style.borderColor.toLowerCase() === '#ffffff' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
+                  backgroundColor: style.borderColor
                 }}
               >
                 {/* Simulated Photo Content */}
-                <div className="w-full h-full bg-neutral-100 relative">
-                   {/* Abstract composition to look like a photo */}
+                {/* Positioned to create: Left 15% gutter + Padding, Top/Right/Bottom Padding */}
+                <div 
+                  className="absolute bg-neutral-100 overflow-hidden"
+                  style={{
+                     left: `calc(15% + ${scaledPadding}px)`, // Gutter + Padding
+                     top: `${scaledPadding}px`,
+                     right: `${scaledPadding}px`,
+                     bottom: `${scaledPadding}px`,
+                  }}
+                >
                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-200/50 to-neutral-50"></div>
                    <div className="absolute bottom-0 w-full h-1/2 bg-neutral-200/30 skew-y-6 transform origin-bottom-left"></div>
                    <div className="absolute top-1/4 right-1/4 w-4 h-4 rounded-full bg-neutral-900/5"></div>
                    
-                   {/* Overlay indicator */}
                    {style.overlayType === 'vintage' && (
                      <div className="absolute inset-0 bg-orange-900/10 mix-blend-multiply"></div>
                    )}

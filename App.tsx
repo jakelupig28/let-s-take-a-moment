@@ -95,7 +95,7 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-neutral-50 text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white overflow-x-hidden">
       {/* Minimal Header - Hidden on Landing Page */}
       {step !== AppStep.LANDING && (
-        <header className="w-full py-8 px-6 flex justify-start items-center max-w-4xl mx-auto z-50 animate-in fade-in slide-in-from-top-4 duration-700">
+        <header className="w-full py-8 px-6 flex justify-start items-center max-w-4xl mx-auto z-50 animate-in fade-in slide-in-from-top-4 duration-700 print:hidden">
           <button 
             onClick={handleBack}
             className="group flex items-center gap-2 text-neutral-400 hover:text-neutral-900 transition-colors"
@@ -108,7 +108,7 @@ const App: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-4xl px-6 flex flex-col items-center justify-center min-h-[600px] relative">
+      <main className="flex-1 w-full max-w-4xl px-6 flex flex-col items-center justify-center min-h-[600px] relative print:w-full print:max-w-none print:px-0 print:block">
         <AnimatePresence mode="wait">
           {step === AppStep.LANDING && (
             <motion.div 
@@ -206,7 +206,7 @@ const App: React.FC = () => {
               exit="exit"
               className="w-full"
             >
-               <div className="flex justify-between items-end mb-8 border-b border-neutral-200 pb-4">
+               <div className="flex justify-between items-end mb-8 border-b border-neutral-200 pb-4 print:hidden">
                 <div>
                   <h2 className="text-2xl font-light">Production</h2>
                   <p className="text-neutral-400 text-sm mt-1">Ready for print on A4.</p>
@@ -229,7 +229,7 @@ const App: React.FC = () => {
 
       {/* Minimal Footer Progress */}
       {step !== AppStep.LANDING && (
-        <div className="fixed bottom-0 left-0 w-full h-1 bg-neutral-100 z-50">
+        <div className="fixed bottom-0 left-0 w-full h-1 bg-neutral-100 z-50 print:hidden">
           <motion.div 
             className="h-full bg-neutral-900"
             initial={{ width: 0 }}

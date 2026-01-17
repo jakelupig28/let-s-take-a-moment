@@ -10,7 +10,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Clean White',
     borderColor: '#ffffff',
     borderWidth: 24,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -18,7 +18,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Mono Black',
     borderColor: '#000000',
     borderWidth: 28,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -26,7 +26,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Stone',
     borderColor: '#e4e4e7', // zinc-200
     borderWidth: 32,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -34,7 +34,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Film Grain',
     borderColor: '#18181b', // zinc-900
     borderWidth: 24,
-    borderRadius: 4,
+    borderRadius: 8,
     overlayType: 'vintage',
   },
   {
@@ -42,7 +42,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Cherry',
     borderColor: '#dc2626', // red-600
     borderWidth: 28,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -50,7 +50,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Royal',
     borderColor: '#1e40af', // blue-800
     borderWidth: 28,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -58,7 +58,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Forest',
     borderColor: '#166534', // green-800
     borderWidth: 28,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -74,7 +74,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Matcha',
     borderColor: '#a3e635', // lime-400
     borderWidth: 28,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -82,7 +82,7 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Butter',
     borderColor: '#fef08a', // yellow-200
     borderWidth: 32,
-    borderRadius: 0,
+    borderRadius: 8,
     overlayType: 'none',
   },
   {
@@ -98,7 +98,39 @@ export const FRAME_STYLES: FrameStyle[] = [
     name: 'Tangerine',
     borderColor: '#fdba74', // orange-300
     borderWidth: 28,
-    borderRadius: 0,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'midnight',
+    name: 'Midnight',
+    borderColor: '#172554', // blue-950
+    borderWidth: 28,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'cocoa',
+    name: 'Cocoa',
+    borderColor: '#451a03', // amber-950
+    borderWidth: 28,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'sky',
+    name: 'Sky',
+    borderColor: '#bae6fd', // sky-200
+    borderWidth: 28,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'mint',
+    name: 'Mint',
+    borderColor: '#a7f3d0', // emerald-200
+    borderWidth: 28,
+    borderRadius: 8,
     overlayType: 'none',
   }
 ];

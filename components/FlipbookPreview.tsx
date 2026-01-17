@@ -35,8 +35,8 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
           className="w-full h-full object-cover grayscale-[10%]"
         />
         
-        {/* Frame Counter - Matching the aesthetic reference */}
-        <div className="absolute bottom-4 right-4 text-[10px] font-medium tracking-widest text-neutral-900 bg-white px-3 py-1.5 shadow-sm">
+        {/* Frame Counter - Moved to upper right */}
+        <div className="absolute top-4 right-4 text-[10px] font-medium tracking-widest text-neutral-900 bg-white px-3 py-1.5 shadow-sm z-10">
           {currentIndex + 1} — {data.frames.length}
         </div>
       </div>

@@ -118,13 +118,14 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     // 3. Draw Branding Text in Gutter (Centered in Gutter area)
     ctx.save();
     ctx.translate(gutterWidth / 2, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.font = '500 14px "Courier New", Courier, monospace'; 
+    ctx.rotate(-Math.PI / 2); // Rotated -90 degrees (Bottom to Top)
+    // Use Playfair Display, Italic, slightly larger
+    ctx.font = 'italic 500 24px "Playfair Display", serif'; 
     ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.letterSpacing = '3px';
-    ctx.fillText("LET'S TAKE A MOMENT", 0, 0);
+    ctx.letterSpacing = '1px';
+    ctx.fillText("let's take a moment", 0, 0);
     ctx.restore();
 
     // 4. Vintage Overlay (over the whole card)
@@ -193,15 +194,24 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
         
         {/* Left Gutter Section (15%) */}
         <div 
-          className="relative w-[15%] h-full z-20 flex items-center justify-center shrink-0 transition-colors duration-300"
+          className="relative w-[15%] h-full z-20 shrink-0 transition-colors duration-300 overflow-hidden"
           style={{ backgroundColor: selectedFrame.borderColor }}
         >
-          <span 
-             className="writing-vertical-lr rotate-180 text-[12px] tracking-[0.3em] font-mono font-medium whitespace-nowrap transform -rotate-90"
-             style={{ color: textColor }}
-          >
-            LET'S TAKE A MOMENT
-          </span>
+          {/* Text Container - Centered and Rotated */}
+          <div className="absolute inset-0 flex items-center justify-center">
+             <span 
+                className="whitespace-nowrap font-medium text-[16px] md:text-[20px]"
+                style={{ 
+                  color: textColor,
+                  fontFamily: '"Playfair Display", serif',
+                  fontStyle: 'italic',
+                  letterSpacing: '1px',
+                  transform: 'rotate(-90deg)' 
+                }}
+             >
+               let's take a moment
+             </span>
+          </div>
         </div>
 
         {/* Video Section (85%) with Borders */}
@@ -234,10 +244,10 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
             )}
 
             {isCapturing && (
-              <div className="absolute top-4 right-4 flex gap-2 items-center z-20">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-mono font-bold tracking-widest text-red-500 pt-0.5">
-                  REC {capturedCount}/{TOTAL_FRAMES}
+              <div className="absolute top-5 right-5 flex items-center gap-3 z-30 px-4 py-2.5 bg-neutral-900/80 backdrop-blur-md rounded-xl border border-white/10 shadow-xl">
+                <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]"></div>
+                <span className="text-xl font-mono font-bold tracking-widest text-white pt-0.5">
+                  {capturedCount}/{TOTAL_FRAMES}
                 </span>
               </div>
             )}

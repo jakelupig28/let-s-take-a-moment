@@ -5,7 +5,6 @@ import { CameraBooth } from './components/CameraBooth';
 import { FrameSelector } from './components/FrameSelector';
 import { FlipbookPreview } from './components/FlipbookPreview';
 import { PrintLayout } from './components/PrintLayout';
-import { CoverGenerator } from './components/CoverGenerator';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initAudio, playClick } from './utils/sound';
@@ -36,13 +35,7 @@ const App: React.FC = () => {
     setStep(AppStep.PREVIEW);
   };
 
-  const handleCoverGenerated = (imgUrl: string) => {
-    playClick();
-    setFlipbookData(prev => ({ ...prev, coverImage: imgUrl }));
-    setStep(AppStep.PRINT);
-  };
-
-  const handleSkipCover = () => {
+  const handleProceedToPrint = () => {
     playClick();
     setStep(AppStep.PRINT);
   };
@@ -124,7 +117,7 @@ const App: React.FC = () => {
                 capture the<br/>moment.
               </h2>
               <p className="text-lg text-neutral-500 max-w-md mb-12 font-light">
-                Create a sequence of 15 frames. <br/>
+                Create a sequence of 18 frames. <br/>
                 A minimal flipbook generator for your printed memories.
               </p>
               <button 
@@ -175,23 +168,22 @@ const App: React.FC = () => {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="w-full flex flex-col items-center gap-16"
+              className="w-full flex flex-col items-center gap-12"
             >
               <FlipbookPreview data={flipbookData} frameStyle={selectedFrame} />
 
-              <div className="flex flex-col md:flex-row gap-8 items-center w-full max-w-2xl">
-                <div className="flex-1 w-full">
-                  <CoverGenerator 
-                    onCoverGenerated={handleCoverGenerated}
-                    onSkip={handleSkipCover}
-                  />
-                </div>
-                <div className="hidden md:flex h-12 w-[1px] bg-neutral-200"></div>
+              <div className="flex flex-col sm:flex-row gap-6 items-center">
                 <button 
                   onClick={() => setStep(AppStep.CAPTURE)}
-                  className="text-neutral-400 hover:text-neutral-900 text-sm tracking-widest uppercase transition-colors"
+                  className="px-8 py-3 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-900 text-sm tracking-widest uppercase transition-all rounded-full min-w-[160px]"
                 >
-                  Retake Sequence
+                  Retake
+                </button>
+                <button 
+                  onClick={handleProceedToPrint}
+                  className="px-8 py-3 bg-neutral-900 text-white text-sm tracking-widest uppercase hover:bg-neutral-800 transition-all shadow-lg rounded-full min-w-[160px] flex items-center justify-center gap-2"
+                >
+                  Confirm
                 </button>
               </div>
             </motion.div>
@@ -218,9 +210,9 @@ const App: React.FC = () => {
         </AnimatePresence>
       </main>
 
-      {/* Credits Footer - Fixed at bottom */}
+      {/* Credits Footer - Static flow */}
       {step === AppStep.LANDING && (
-        <div className="fixed bottom-6 left-0 w-full text-center z-40 animate-in fade-in duration-1000 delay-500">
+        <div className="w-full text-center py-6 animate-in fade-in duration-1000 delay-500">
            <span className="text-neutral-500 text-[10px] tracking-[0.2em] uppercase font-medium">
              Created by Jake Lupig
            </span>

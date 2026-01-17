@@ -85,7 +85,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-neutral-50 text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white overflow-x-hidden">
+    <div 
+      className={`flex flex-col items-center bg-neutral-50 text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white ${
+        step === AppStep.LANDING ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'
+      }`}
+    >
       {/* Minimal Header - Hidden on Landing Page */}
       {step !== AppStep.LANDING && (
         <header className="w-full py-8 px-6 flex justify-start items-center max-w-4xl mx-auto z-50 animate-in fade-in slide-in-from-top-4 duration-700 print:hidden">
@@ -101,7 +105,11 @@ const App: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-4xl px-6 flex flex-col items-center justify-center min-h-[600px] relative print:w-full print:max-w-none print:px-0 print:block">
+      <main 
+        className={`flex-1 w-full max-w-4xl px-6 flex flex-col items-center justify-center relative print:w-full print:max-w-none print:px-0 print:block ${
+          step !== AppStep.LANDING ? 'min-h-[600px]' : ''
+        }`}
+      >
         <AnimatePresence mode="wait">
           {step === AppStep.LANDING && (
             <motion.div 
@@ -212,7 +220,7 @@ const App: React.FC = () => {
 
       {/* Credits Footer - Static flow */}
       {step === AppStep.LANDING && (
-        <div className="w-full text-center py-6 animate-in fade-in duration-1000 delay-500">
+        <div className="w-full text-center py-6 animate-in fade-in duration-1000 delay-500 shrink-0">
            <span className="text-neutral-500 text-[10px] tracking-[0.2em] uppercase font-medium">
              Created by Jake Lupig
            </span>

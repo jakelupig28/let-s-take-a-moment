@@ -121,8 +121,11 @@ const App: React.FC = () => {
               className="flex flex-col items-center text-center w-full max-w-2xl"
             >
               <span className="text-neutral-400 text-sm tracking-[0.2em] uppercase mb-4">Analog Series v1.0</span>
-              <h2 className="text-6xl md:text-8xl font-medium tracking-tight leading-[0.9] mb-8 text-neutral-900">
-                capture the<br/>moment.
+              <h2 
+                className="text-6xl md:text-8xl font-normal tracking-tight leading-tight mb-8 text-neutral-900 italic"
+                style={{ fontFamily: '"Playfair Display", serif' }}
+              >
+                let's take a moment
               </h2>
               <p className="text-lg text-neutral-500 max-w-md mb-12 font-light">
                 Create a sequence of 18 frames. <br/>

@@ -6,7 +6,7 @@ import { FrameSelector } from './components/FrameSelector';
 import { FlipbookPreview } from './components/FlipbookPreview';
 import { PrintLayout } from './components/PrintLayout';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { initAudio, playClick } from './utils/sound';
 
 const App: React.FC = () => {
@@ -61,7 +61,7 @@ const App: React.FC = () => {
   };
 
   // Animation variants for smooth page transitions
-  const pageVariants = {
+  const pageVariants: Variants = {
     initial: { 
       opacity: 0, 
       y: 20, 

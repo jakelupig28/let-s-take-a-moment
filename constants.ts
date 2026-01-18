@@ -1,6 +1,6 @@
 import { FrameStyle } from './types';
 
-export const TOTAL_FRAMES = 18;
+export const TOTAL_FRAMES = 15;
 export const CAPTURE_INTERVAL_MS = 600; // Time between shots
 export const COUNTDOWN_SECONDS = 3;
 

@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { TOTAL_FRAMES, CAPTURE_INTERVAL_MS, COUNTDOWN_SECONDS } from '../constants';
+import { TOTAL_FRAMES, RECORDING_DURATION_MS, COUNTDOWN_SECONDS } from '../constants';
 import { FrameStyle } from '../types';
 import { playTick, playShutter } from '../utils/sound';
+import { Loader2 } from 'lucide-react';
 
 interface CameraBoothProps {
   onCaptureComplete: (frames: string[]) => void;
@@ -11,13 +12,28 @@ interface CameraBoothProps {
 export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, selectedFrame }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCountingDown, setIsCountingDown] = useState(false);
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
-  const [capturedCount, setCapturedCount] = useState(0);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingProgress, setRecordingProgress] = useState(0); // 0 to 100
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper to determine text contrast color
+  const getContrastColor = (hex: string) => {
+    if (!hex || hex[0] !== '#') return '#000000';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#171717' : '#ffffff';
+  };
+
+  const textColor = getContrastColor(selectedFrame.borderColor);
 
   useEffect(() => {
     let currentStream: MediaStream | null = null;
@@ -25,7 +41,8 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
       setError(null);
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false // No audio needed for flipbook
         });
         setStream(currentStream);
         if (videoRef.current) {
@@ -42,34 +59,13 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     };
   }, []);
 
-  // Helper to determine text contrast color
-  const getContrastColor = (hex: string) => {
-    if (!hex || hex[0] !== '#') return '#000000';
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return (yiq >= 128) ? '#171717' : '#ffffff';
-  };
-
-  const textColor = getContrastColor(selectedFrame.borderColor);
-
-  const captureFrame = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    playShutter();
-
-    // 16:9 Aspect Ratio Output
-    const width = 960;
-    const height = 540;
-    
-    canvas.width = width;
-    canvas.height = height;
-    
+  // Frame Rendering Logic (Reused for both preview and extraction)
+  const drawComposition = useCallback((
+    sourceVideo: HTMLVideoElement, 
+    ctx: CanvasRenderingContext2D, 
+    width: number, 
+    height: number
+  ) => {
     // Layout Calculation
     // Left Gutter: 15% fixed
     const gutterWidth = width * 0.15;
@@ -78,15 +74,14 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     const padding = selectedFrame.borderWidth; 
 
     // Destination Area for Video
-    // We want the video to be padded from the gutter and from the outer edges.
     const destX = gutterWidth + padding;
     const destY = padding;
-    const destW = width - gutterWidth - (padding * 2); // Left padding (after gutter) + Right padding
-    const destH = height - (padding * 2); // Top padding + Bottom padding
+    const destW = width - gutterWidth - (padding * 2); 
+    const destH = height - (padding * 2);
     const destAspect = destW / destH;
 
-    const vWidth = video.videoWidth;
-    const vHeight = video.videoHeight;
+    const vWidth = sourceVideo.videoWidth;
+    const vHeight = sourceVideo.videoHeight;
     const vAspect = vWidth / vHeight;
 
     // Crop calculation to cover the destination area
@@ -109,18 +104,18 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
 
     // 2. Draw Video inside the padded area
     ctx.save();
-    // Translate to the right edge of the destination rect to handle the flip
+    // Translate to the right edge of the destination rect to handle the flip (mirror effect)
     ctx.translate(destX + destW, destY);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, sX, sY, sW, sH, 0, 0, destW, destH);
+    ctx.drawImage(sourceVideo, sX, sY, sW, sH, 0, 0, destW, destH);
     ctx.restore();
 
     // 3. Draw Branding Text in Gutter (Centered in Gutter area)
     ctx.save();
     ctx.translate(gutterWidth / 2, height / 2);
     ctx.rotate(-Math.PI / 2); // Rotated -90 degrees (Bottom to Top)
-    // Use Playfair Display, Italic, slightly larger
-    ctx.font = 'italic 500 24px "Playfair Display", serif'; 
+    // Use Playfair Display, Italic, smaller size for aesthetic
+    ctx.font = 'italic 500 16px "Playfair Display", serif'; 
     ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -133,39 +128,122 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
       ctx.fillStyle = 'rgba(200, 190, 180, 0.15)';
       ctx.fillRect(0, 0, width, height);
     }
-    
-    return canvas.toDataURL('image/jpeg', 0.9);
   }, [selectedFrame, textColor]);
 
-  useEffect(() => {
-    if (!isCapturing) return;
-    const intervalId = setInterval(() => {
-      setCapturedCount(prev => {
-        if (prev >= TOTAL_FRAMES) {
-          clearInterval(intervalId);
-          setIsCapturing(false);
-          return prev;
-        }
-        const frame = captureFrame();
-        if (frame) setCapturedFrames(c => [...c, frame]);
-        return prev + 1;
-      });
-    }, CAPTURE_INTERVAL_MS);
-    return () => clearInterval(intervalId);
-  }, [isCapturing, captureFrame]);
+  const processVideo = async (videoBlob: Blob) => {
+    setIsProcessing(true);
+    const tempVideo = document.createElement('video');
+    tempVideo.src = URL.createObjectURL(videoBlob);
+    tempVideo.muted = true;
+    tempVideo.playsInline = true;
+    
+    // Wait for metadata to load to get duration
+    await new Promise((resolve) => {
+      tempVideo.onloadedmetadata = () => resolve(true);
+      // Trigger load
+      tempVideo.load();
+    });
 
-  useEffect(() => {
-    if (capturedFrames.length === TOTAL_FRAMES && !isCapturing) {
-      setTimeout(() => onCaptureComplete(capturedFrames), 500);
+    // Ensure canvas exists
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 16:9 Aspect Ratio Output
+    const width = 960;
+    const height = 540;
+    canvas.width = width;
+    canvas.height = height;
+
+    const frames: string[] = [];
+    
+    // We want 15 frames from the 6 second video.
+    // However, the video duration might slightly differ from 6s due to recording latency.
+    // Use actual duration.
+    const duration = tempVideo.duration;
+    
+    // Extract frames
+    for (let i = 0; i < TOTAL_FRAMES; i++) {
+      // Calculate timestamp for this frame
+      const time = (i / TOTAL_FRAMES) * duration;
+      tempVideo.currentTime = time;
+
+      // Wait for seek to complete
+      await new Promise((resolve) => {
+        tempVideo.onseeked = resolve;
+      });
+
+      // Draw
+      drawComposition(tempVideo, ctx, width, height);
+      
+      // Capture
+      frames.push(canvas.toDataURL('image/jpeg', 0.9));
     }
-  }, [capturedFrames, isCapturing, onCaptureComplete]);
+
+    // Add final solid color frame
+    ctx.fillStyle = selectedFrame.borderColor;
+    ctx.fillRect(0, 0, width, height);
+    frames.push(canvas.toDataURL('image/jpeg', 0.9));
+
+    URL.revokeObjectURL(tempVideo.src);
+    playShutter(); // Play sound to indicate processing done
+    onCaptureComplete(frames);
+    setIsProcessing(false);
+  };
+
+  const startRecording = () => {
+    if (!stream) return;
+    chunksRef.current = [];
+    
+    try {
+      // Prefer mp4/webm, fallback to default
+      const mimeType = MediaRecorder.isTypeSupported('video/mp4') 
+        ? 'video/mp4' 
+        : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '');
+        
+      const options = mimeType ? { mimeType } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options);
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' });
+        processVideo(blob);
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingProgress(0);
+
+      // Progress Timer
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / RECORDING_DURATION_MS) * 100, 100);
+        setRecordingProgress(progress);
+
+        if (elapsed >= RECORDING_DURATION_MS) {
+          clearInterval(interval);
+          if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
+          setIsRecording(false);
+        }
+      }, 50);
+
+    } catch (e) {
+      console.error("Failed to start recording", e);
+      setError("Failed to start video recording.");
+    }
+  };
 
   const startCountdown = () => {
     setIsCountingDown(true);
-    setCapturedFrames([]);
-    setCapturedCount(0);
     setCountdown(COUNTDOWN_SECONDS);
-    
     playTick(); 
 
     const timer = setInterval(() => {
@@ -173,7 +251,7 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
         if (prev <= 1) {
           clearInterval(timer);
           setIsCountingDown(false);
-          setIsCapturing(true);
+          startRecording();
           return 0;
         }
         playTick(); 
@@ -215,7 +293,6 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
         </div>
 
         {/* Video Section (85%) with Borders */}
-        {/* We use padding to simulate the top/right/bottom/left border inside this flex item */}
         <div 
           className="relative flex-1 h-full overflow-hidden transition-all duration-300"
           style={{ 
@@ -223,7 +300,7 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
             paddingTop: `${selectedFrame.borderWidth}px`,
             paddingBottom: `${selectedFrame.borderWidth}px`,
             paddingRight: `${selectedFrame.borderWidth}px`,
-            paddingLeft: `${selectedFrame.borderWidth}px`, // Added padding left to separate from gutter
+            paddingLeft: `${selectedFrame.borderWidth}px`,
           }}
         >
           {/* Inner Video Container */}
@@ -243,13 +320,30 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
               </div>
             )}
 
-            {isCapturing && (
-              <div className="absolute top-5 right-5 flex items-center gap-3 z-30 px-4 py-2.5 bg-neutral-900/80 backdrop-blur-md rounded-xl border border-white/10 shadow-xl">
-                <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]"></div>
-                <span className="text-xl font-mono font-bold tracking-widest text-white pt-0.5">
-                  {capturedCount}/{TOTAL_FRAMES}
-                </span>
+            {isRecording && (
+              <div className="absolute inset-x-0 top-0 p-4 z-30 flex justify-between items-start">
+                 <div className="flex items-center gap-3 px-4 py-2 bg-neutral-900/80 backdrop-blur-md rounded-full border border-white/10 shadow-xl">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+                    <span className="text-xs font-mono font-bold tracking-widest text-white uppercase">REC</span>
+                 </div>
               </div>
+            )}
+
+            {isProcessing && (
+               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/90 z-40 backdrop-blur-sm">
+                  <Loader2 className="w-10 h-10 text-white animate-spin mb-4" />
+                  <span className="text-white font-mono text-sm tracking-widest uppercase">Developing...</span>
+               </div>
+            )}
+
+            {/* Recording Progress Bar (at bottom of video feed) */}
+            {isRecording && (
+               <div className="absolute bottom-0 left-0 w-full h-2 bg-neutral-800/50">
+                  <div 
+                    className="h-full bg-red-500 transition-all duration-75 ease-linear"
+                    style={{ width: `${recordingProgress}%` }}
+                  ></div>
+               </div>
             )}
           </div>
         </div>
@@ -258,7 +352,7 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Controls */}
-      {!isCapturing && !isCountingDown && (
+      {!isRecording && !isCountingDown && !isProcessing && (
         <button
           onClick={startCountdown}
           className="group relative flex items-center justify-center w-16 h-16 mt-8 rounded-full border border-neutral-300 hover:border-neutral-900 transition-all"
@@ -267,9 +361,9 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
         </button>
       )}
       
-      {isCapturing && (
-        <div className="text-neutral-400 text-xs tracking-widest uppercase animate-pulse mt-8 font-mono">
-          Recording...
+      {isRecording && (
+        <div className="text-neutral-400 text-xs tracking-widest uppercase mt-8 font-mono">
+          Keep Moving
         </div>
       )}
     </div>

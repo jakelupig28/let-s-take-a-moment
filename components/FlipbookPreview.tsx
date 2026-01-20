@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FlipbookData, FrameStyle } from '../types';
+import { TOTAL_FRAMES } from '../constants';
 
 interface FlipbookPreviewProps {
   data: FlipbookData;
@@ -17,6 +18,9 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
   }, [data.frames.length]);
 
   const currentImage = data.frames[currentIndex];
+
+  // Cap the displayed current frame number to TOTAL_FRAMES so the extra solid color frame doesn't increment the count beyond 20
+  const displayCurrent = Math.min(currentIndex + 1, TOTAL_FRAMES);
 
   return (
     <div className="flex flex-col items-center">
@@ -37,7 +41,7 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
         
         {/* Frame Counter - Moved to upper right */}
         <div className="absolute top-4 right-4 text-[10px] font-medium tracking-widest text-neutral-900 bg-white px-3 py-1.5 shadow-sm z-10">
-          {currentIndex + 1} — {data.frames.length}
+          {displayCurrent} — {TOTAL_FRAMES}
         </div>
       </div>
     </div>

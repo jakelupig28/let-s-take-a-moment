@@ -1,7 +1,7 @@
 import { FrameStyle } from './types';
 
-export const TOTAL_FRAMES = 18;
-export const CAPTURE_INTERVAL_MS = 600; // Time between shots
+export const TOTAL_FRAMES = 20;
+export const RECORDING_DURATION_MS = 6000; // 6 Seconds video
 export const COUNTDOWN_SECONDS = 3;
 
 export const FRAME_STYLES: FrameStyle[] = [
@@ -129,6 +129,38 @@ export const FRAME_STYLES: FrameStyle[] = [
     id: 'mint',
     name: 'Mint',
     borderColor: '#a7f3d0', // emerald-200
+    borderWidth: 28,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'wine',
+    name: 'Wine',
+    borderColor: '#881337', // rose-900
+    borderWidth: 28,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'olive',
+    name: 'Olive',
+    borderColor: '#4d7c0f', // lime-700
+    borderWidth: 28,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'sand',
+    name: 'Sand',
+    borderColor: '#d6d3d1', // stone-300
+    borderWidth: 32,
+    borderRadius: 8,
+    overlayType: 'none',
+  },
+  {
+    id: 'slate',
+    name: 'Slate',
+    borderColor: '#475569', // slate-600
     borderWidth: 28,
     borderRadius: 8,
     overlayType: 'none',

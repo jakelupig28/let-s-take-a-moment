@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppStep, FlipbookData, FrameStyle } from './types';
-import { FRAME_STYLES } from './constants';
+import { FRAME_STYLES, TOTAL_FRAMES } from './constants';
 import { CameraBooth } from './components/CameraBooth';
 import { FrameSelector } from './components/FrameSelector';
 import { FlipbookPreview } from './components/FlipbookPreview';
@@ -128,7 +128,7 @@ const App: React.FC = () => {
                 let's take a moment
               </h2>
               <p className="text-lg text-neutral-500 max-w-md mb-12 font-light">
-                Create a sequence of 18 frames. <br/>
+                Record a {TOTAL_FRAMES} frame moving portrait. <br/>
                 A minimal flipbook generator for your printed memories.
               </p>
               <button 

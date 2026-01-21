@@ -56,6 +56,9 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) =>
   const paddingX = (frameStyle.borderWidth / REFERENCE_WIDTH) * 100;
   const paddingY = (frameStyle.borderWidth / REFERENCE_HEIGHT) * 100;
 
+  // Constants for Cover Layout
+  const COVER_GUTTER_PERCENT = 15; // Updated to 15% thickness as requested
+
   return (
     <div className="flex flex-col items-center w-full">
       <div className="flex gap-4 mb-8 print:hidden">
@@ -97,32 +100,39 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) =>
                         style={{ backgroundColor: frameStyle.borderColor }}
                      >
                         {/* Gutter Content */}
-                        <div className="absolute left-0 top-0 bottom-0 w-[15%] z-10">
-                            {/* Title - Centered vertically to match frames */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div 
+                           className="absolute left-0 top-0 bottom-0 z-10 flex items-center justify-center overflow-hidden"
+                           style={{ width: `${COVER_GUTTER_PERCENT}%` }}
+                        >
+                            {/* 
+                                Rotated Container
+                                Stacked Flex Column: Title above Date (in vertical/rotated orientation).
+                            */}
+                            <div 
+                                className="flex flex-col items-center gap-0.5"
+                                style={{ 
+                                    transform: 'rotate(-90deg)',
+                                    transformOrigin: 'center'
+                                }}
+                            >
                                 <span 
                                     className="whitespace-nowrap font-medium italic"
                                     style={{ 
                                         color: textColor,
                                         fontFamily: '"Playfair Display", serif',
-                                        fontSize: '5px', // Smaller to match the 16px frame text
+                                        fontSize: '5px',
                                         letterSpacing: '0.5px',
-                                        transform: 'rotate(-90deg)' 
                                     }}
                                 >
                                 let's take a moment
                                 </span>
-                            </div>
-                            
-                            {/* Date - Positioned absolutely at the bottom of the gutter */}
-                            <div className="absolute left-0 right-0 bottom-4 flex items-center justify-center pointer-events-none">
+                                
                                 <span 
                                     className="whitespace-nowrap font-mono opacity-70"
                                     style={{ 
                                         color: textColor,
-                                        fontSize: '4px', // Tiny font for date
+                                        fontSize: '4px',
                                         letterSpacing: '0.5px',
-                                        transform: 'rotate(-90deg)' 
                                     }}
                                 >
                                     {dateString}
@@ -137,7 +147,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) =>
                                 top: `${paddingY}%`,
                                 bottom: `${paddingY}%`,
                                 right: `${paddingX}%`,
-                                left: `${15 + paddingX}%`, // 15% gutter + padding
+                                left: `${COVER_GUTTER_PERCENT + paddingX}%`, // 15% gutter + padding
                             }}
                         >
                             {data.coverImage ? (

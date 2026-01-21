@@ -12,15 +12,16 @@ interface CameraBoothProps {
 export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, selectedFrame }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  
+  // Store raw pixel data during capture to avoid serialization lag
+  const rawFramesRef = useRef<ImageData[]>([]);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCountingDown, setIsCountingDown] = useState(false);
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingProgress, setRecordingProgress] = useState(0); // 0 to 100
   const [isProcessing, setIsProcessing] = useState(false);
+  const [recordingProgress, setRecordingProgress] = useState(0); // 0 to 100
   const [error, setError] = useState<string | null>(null);
 
   // Helper to determine text contrast color
@@ -59,7 +60,7 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     };
   }, []);
 
-  // Frame Rendering Logic (Reused for both preview and extraction)
+  // Frame Rendering Logic
   const drawComposition = useCallback((
     sourceVideo: HTMLVideoElement, 
     ctx: CanvasRenderingContext2D, 
@@ -67,7 +68,7 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     height: number
   ) => {
     // Layout Calculation
-    // Left Gutter: 15% fixed
+    // Left Gutter: 15% fixed (Kept at 15% for video frames to maximize capture area)
     const gutterWidth = width * 0.15;
     
     // Padding/Frame Thickness
@@ -130,115 +131,79 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     }
   }, [selectedFrame, textColor]);
 
-  const processVideo = async (videoBlob: Blob) => {
-    setIsProcessing(true);
-    const tempVideo = document.createElement('video');
-    tempVideo.src = URL.createObjectURL(videoBlob);
-    tempVideo.muted = true;
-    tempVideo.playsInline = true;
-    
-    // Wait for metadata to load to get duration
-    await new Promise((resolve) => {
-      tempVideo.onloadedmetadata = () => resolve(true);
-      // Trigger load
-      tempVideo.load();
-    });
+  const processFrames = async (rawFrames: ImageData[], width: number, height: number): Promise<string[]> => {
+    // Create a temporary canvas for conversion
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const ctx = tempCanvas.getContext('2d');
+    if (!ctx) return [];
 
-    // Ensure canvas exists
-    if (!canvasRef.current) return;
+    const processedFrames: string[] = [];
+
+    // Process iteratively to avoid blocking main thread too long if we used a tight loop
+    // But for 20 frames, a simple loop is usually acceptable.
+    for (const frameData of rawFrames) {
+        ctx.putImageData(frameData, 0, 0);
+        processedFrames.push(tempCanvas.toDataURL('image/jpeg', 0.9));
+    }
+    
+    // Add final frame (Solid color end card)
+    ctx.fillStyle = selectedFrame.borderColor;
+    ctx.fillRect(0, 0, width, height);
+    processedFrames.push(tempCanvas.toDataURL('image/jpeg', 0.9));
+    
+    return processedFrames;
+  };
+
+  const startRecording = () => {
+    if (!stream || !videoRef.current || !canvasRef.current) return;
+    
+    setIsRecording(true);
+    setRecordingProgress(0);
+    rawFramesRef.current = [];
+    
+    // Setup Canvas for Capture
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // 16:9 Aspect Ratio Output
+    // Set Capture Resolution (16:9)
     const width = 960;
     const height = 540;
     canvas.width = width;
     canvas.height = height;
 
-    const frames: string[] = [];
+    const intervalTime = RECORDING_DURATION_MS / TOTAL_FRAMES;
+    let frameCount = 0;
     
-    // We want 15 frames from the 6 second video.
-    // However, the video duration might slightly differ from 6s due to recording latency.
-    // Use actual duration.
-    const duration = tempVideo.duration;
-    
-    // Extract frames
-    for (let i = 0; i < TOTAL_FRAMES; i++) {
-      // Calculate timestamp for this frame
-      const time = (i / TOTAL_FRAMES) * duration;
-      tempVideo.currentTime = time;
-
-      // Wait for seek to complete
-      await new Promise((resolve) => {
-        tempVideo.onseeked = resolve;
-      });
-
-      // Draw
-      drawComposition(tempVideo, ctx, width, height);
-      
-      // Capture
-      frames.push(canvas.toDataURL('image/jpeg', 0.9));
-    }
-
-    // Add final solid color frame
-    ctx.fillStyle = selectedFrame.borderColor;
-    ctx.fillRect(0, 0, width, height);
-    frames.push(canvas.toDataURL('image/jpeg', 0.9));
-
-    URL.revokeObjectURL(tempVideo.src);
-    playShutter(); // Play sound to indicate processing done
-    onCaptureComplete(frames);
-    setIsProcessing(false);
-  };
-
-  const startRecording = () => {
-    if (!stream) return;
-    chunksRef.current = [];
-    
-    try {
-      // Prefer mp4/webm, fallback to default
-      const mimeType = MediaRecorder.isTypeSupported('video/mp4') 
-        ? 'video/mp4' 
-        : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '');
+    const interval = setInterval(() => {
+        if (!videoRef.current || !ctx) return;
         
-      const options = mimeType ? { mimeType } : undefined;
-      const mediaRecorder = new MediaRecorder(stream, options);
-      
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
+        // Render Frame
+        drawComposition(videoRef.current, ctx, width, height);
+        
+        // Capture raw pixel data (Faster than toDataURL)
+        const frameData = ctx.getImageData(0, 0, width, height);
+        rawFramesRef.current.push(frameData);
+        
+        frameCount++;
+        setRecordingProgress((frameCount / TOTAL_FRAMES) * 100);
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' });
-        processVideo(blob);
-      };
+        if (frameCount >= TOTAL_FRAMES) {
+            clearInterval(interval);
+            setIsRecording(false);
+            setIsProcessing(true);
+            playShutter();
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingProgress(0);
-
-      // Progress Timer
-      const startTime = Date.now();
-      const interval = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min((elapsed / RECORDING_DURATION_MS) * 100, 100);
-        setRecordingProgress(progress);
-
-        if (elapsed >= RECORDING_DURATION_MS) {
-          clearInterval(interval);
-          if (mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-          }
-          setIsRecording(false);
+            // Process frames asynchronously to allow UI to update
+            setTimeout(async () => {
+                const finalFrames = await processFrames(rawFramesRef.current, width, height);
+                setIsProcessing(false);
+                onCaptureComplete(finalFrames);
+            }, 100);
         }
-      }, 50);
-
-    } catch (e) {
-      console.error("Failed to start recording", e);
-      setError("Failed to start video recording.");
-    }
+    }, intervalTime);
   };
 
   const startCountdown = () => {
@@ -319,6 +284,13 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
                 <span className="text-9xl font-light text-neutral-900 font-mono">{countdown}</span>
               </div>
             )}
+            
+            {isProcessing && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/90 z-20 backdrop-blur-sm">
+                <Loader2 className="w-8 h-8 text-white animate-spin mb-4" />
+                <span className="text-white font-mono text-sm tracking-widest uppercase">Developing</span>
+              </div>
+            )}
 
             {isRecording && (
               <div className="absolute inset-x-0 top-0 p-4 z-30 flex justify-between items-start">
@@ -327,13 +299,6 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
                     <span className="text-xs font-mono font-bold tracking-widest text-white uppercase">REC</span>
                  </div>
               </div>
-            )}
-
-            {isProcessing && (
-               <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/90 z-40 backdrop-blur-sm">
-                  <Loader2 className="w-10 h-10 text-white animate-spin mb-4" />
-                  <span className="text-white font-mono text-sm tracking-widest uppercase">Developing...</span>
-               </div>
             )}
 
             {/* Recording Progress Bar (at bottom of video feed) */}

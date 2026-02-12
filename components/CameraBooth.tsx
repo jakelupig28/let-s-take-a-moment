@@ -1,15 +1,16 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TOTAL_FRAMES, RECORDING_DURATION_MS, COUNTDOWN_SECONDS } from '../constants';
-import { FrameStyle } from '../types';
+import { FrameStyle, AppMode } from '../types';
 import { playTick, playShutter } from '../utils/sound';
 import { Loader2 } from 'lucide-react';
 
 interface CameraBoothProps {
   onCaptureComplete: (frames: string[]) => void;
   selectedFrame: FrameStyle;
+  mode: AppMode;
 }
 
-export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, selectedFrame }) => {
+export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, selectedFrame, mode }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -141,17 +142,22 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
 
     const processedFrames: string[] = [];
 
+    const mimeType = mode === 'PHOTOBOOTH' ? 'image/png' : 'image/jpeg';
+    const quality = mode === 'PHOTOBOOTH' ? 1.0 : 0.9;
+
     // Process iteratively to avoid blocking main thread too long if we used a tight loop
     // But for 20 frames, a simple loop is usually acceptable.
     for (const frameData of rawFrames) {
         ctx.putImageData(frameData, 0, 0);
-        processedFrames.push(tempCanvas.toDataURL('image/jpeg', 0.9));
+        processedFrames.push(tempCanvas.toDataURL(mimeType, quality));
     }
     
-    // Add final frame (Solid color end card)
-    ctx.fillStyle = selectedFrame.borderColor;
-    ctx.fillRect(0, 0, width, height);
-    processedFrames.push(tempCanvas.toDataURL('image/jpeg', 0.9));
+    // Add final frame (Solid color end card) only for Flipbook
+    if (mode === 'FLIPBOOK') {
+      ctx.fillStyle = selectedFrame.borderColor;
+      ctx.fillRect(0, 0, width, height);
+      processedFrames.push(tempCanvas.toDataURL('image/jpeg', 0.9));
+    }
     
     return processedFrames;
   };
@@ -173,6 +179,29 @@ export const CameraBooth: React.FC<CameraBoothProps> = ({ onCaptureComplete, sel
     const height = 540;
     canvas.width = width;
     canvas.height = height;
+
+    if (mode === 'PHOTOBOOTH') {
+      if (videoRef.current && ctx) {
+        // Render Frame
+        drawComposition(videoRef.current, ctx, width, height);
+        
+        // Capture raw pixel data
+        const frameData = ctx.getImageData(0, 0, width, height);
+        rawFramesRef.current.push(frameData);
+        
+        setIsRecording(false);
+        setIsProcessing(true);
+        playShutter();
+
+        // Process frames asynchronously
+        setTimeout(async () => {
+            const finalFrames = await processFrames(rawFramesRef.current, width, height);
+            setIsProcessing(false);
+            onCaptureComplete(finalFrames);
+        }, 100);
+      }
+      return;
+    }
 
     const intervalTime = RECORDING_DURATION_MS / TOTAL_FRAMES;
     let frameCount = 0;

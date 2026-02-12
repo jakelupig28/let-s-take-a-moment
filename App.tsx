@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppStep, FlipbookData, FrameStyle } from './types';
+import { AppStep, FlipbookData, FrameStyle, AppMode } from './types';
 import { FRAME_STYLES, TOTAL_FRAMES } from './constants';
 import { CameraBooth } from './components/CameraBooth';
 import { FrameSelector } from './components/FrameSelector';
@@ -11,6 +11,7 @@ import { initAudio, playClick } from './utils/sound';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<AppStep>(AppStep.LANDING);
+  const [mode, setMode] = useState<AppMode>('FLIPBOOK');
   const [selectedFrame, setSelectedFrame] = useState<FrameStyle>(FRAME_STYLES[0]);
   const [flipbookData, setFlipbookData] = useState<FlipbookData>({
     frames: [],
@@ -18,9 +19,10 @@ const App: React.FC = () => {
     timestamp: Date.now()
   });
 
-  const handleStart = () => {
+  const handleStart = (selectedMode: AppMode) => {
     initAudio(); // Resume AudioContext if needed
     playClick();
+    setMode(selectedMode);
     setStep(AppStep.SETUP);
   };
   
@@ -131,12 +133,22 @@ const App: React.FC = () => {
                 Record a {TOTAL_FRAMES} frame moving portrait. <br/>
                 A minimal flipbook generator for your printed memories.
               </p>
-              <button 
-                onClick={handleStart}
-                className="group flex items-center gap-3 px-10 py-4 bg-neutral-900 text-white text-sm font-medium uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 rounded-full"
-              >
-                Start Session <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              
+              <div className="flex flex-col gap-4 items-center">
+                <button 
+                  onClick={() => handleStart('PHOTOBOOTH')}
+                  className="group flex items-center justify-center gap-3 px-10 py-4 bg-white text-neutral-900 border border-neutral-200 text-sm font-medium uppercase tracking-widest hover:bg-neutral-50 hover:border-neutral-900 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 rounded-full min-w-[260px]"
+                >
+                  Photobooth <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <button 
+                  onClick={() => handleStart('FLIPBOOK')}
+                  className="group flex items-center justify-center gap-3 px-10 py-4 bg-neutral-900 text-white text-sm font-medium uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 rounded-full min-w-[260px]"
+                >
+                  Start Session <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -168,6 +180,7 @@ const App: React.FC = () => {
               <CameraBooth 
                 onCaptureComplete={handleCaptureComplete} 
                 selectedFrame={selectedFrame}
+                mode={mode}
               />
             </motion.div>
           )}
@@ -181,7 +194,7 @@ const App: React.FC = () => {
               exit="exit"
               className="w-full flex flex-col items-center gap-12"
             >
-              <FlipbookPreview data={flipbookData} frameStyle={selectedFrame} />
+              <FlipbookPreview data={flipbookData} frameStyle={selectedFrame} mode={mode} />
 
               <div className="flex flex-col sm:flex-row gap-6 items-center">
                 <button 
@@ -215,7 +228,7 @@ const App: React.FC = () => {
                   <p className="text-neutral-400 text-sm mt-1">Ready for print on A4.</p>
                 </div>
               </div>
-              <PrintLayout data={flipbookData} frameStyle={selectedFrame} />
+              <PrintLayout data={flipbookData} frameStyle={selectedFrame} mode={mode} />
             </motion.div>
           )}
         </AnimatePresence>

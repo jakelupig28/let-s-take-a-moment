@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { FlipbookData, FrameStyle } from '../types';
+import { FlipbookData, FrameStyle, AppMode } from '../types';
 import { TOTAL_FRAMES } from '../constants';
 
 interface FlipbookPreviewProps {
   data: FlipbookData;
   frameStyle: FrameStyle;
+  mode: AppMode;
 }
 
-export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameStyle }) => {
+export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameStyle, mode }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    if (mode === 'PHOTOBOOTH' || data.frames.length <= 1) return;
+
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % data.frames.length);
     }, 150);
     return () => clearInterval(interval);
-  }, [data.frames.length]);
+  }, [data.frames.length, mode]);
 
   const currentImage = data.frames[currentIndex];
 
@@ -25,12 +28,11 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
   return (
     <div className="flex flex-col items-center">
       <div 
-        className="relative bg-white overflow-hidden shadow-lg"
+        className="relative bg-white overflow-hidden shadow-lg transition-transform hover:scale-[1.02] duration-300"
         style={{
-          width: '320px',
-          height: '180px', // 16:9 Aspect Ratio (320 / 1.777)
+          width: mode === 'PHOTOBOOTH' ? '480px' : '320px',
+          height: mode === 'PHOTOBOOTH' ? '270px' : '180px', // 16:9 Aspect Ratio
           borderRadius: `${frameStyle.borderRadius}px`
-          // Note: Border color is now part of the image itself, so we don't add a border here.
         }}
       >
         <img 
@@ -40,9 +42,11 @@ export const FlipbookPreview: React.FC<FlipbookPreviewProps> = ({ data, frameSty
         />
         
         {/* Frame Counter - Moved to upper right */}
-        <div className="absolute top-4 right-4 text-[10px] font-medium tracking-widest text-neutral-900 bg-white px-3 py-1.5 shadow-sm z-10">
-          {displayCurrent} — {TOTAL_FRAMES}
-        </div>
+        {mode === 'FLIPBOOK' && (
+          <div className="absolute top-4 right-4 text-[10px] font-medium tracking-widest text-neutral-900 bg-white px-3 py-1.5 shadow-sm z-10">
+            {displayCurrent} — {TOTAL_FRAMES}
+          </div>
+        )}
       </div>
     </div>
   );

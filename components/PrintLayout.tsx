@@ -1,14 +1,15 @@
 import React, { useRef } from 'react';
-import { FlipbookData, FrameStyle } from '../types';
+import { FlipbookData, FrameStyle, AppMode } from '../types';
 import { Printer, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 interface PrintLayoutProps {
   data: FlipbookData;
   frameStyle: FrameStyle;
+  mode: AppMode;
 }
 
-export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) => {
+export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle, mode }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   // Helper to determine text contrast color
@@ -28,6 +29,14 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) =>
   const gridItems = ['COVER_TOKEN', ...frames]; 
 
   const handleDownload = async () => {
+    if (mode === 'PHOTOBOOTH' && data.frames[0]) {
+      const link = document.createElement('a');
+      link.download = `photobooth-${Date.now()}.png`;
+      link.href = data.frames[0];
+      link.click();
+      return;
+    }
+
     if (!printRef.current) return;
     const canvas = await html2canvas(printRef.current, {
       scale: 2,
@@ -72,11 +81,27 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) =>
           onClick={handleDownload}
           className="flex items-center gap-2 px-8 py-3 bg-neutral-900 text-white text-sm uppercase tracking-widest hover:bg-neutral-800 transition-all"
         >
-          <Download className="w-4 h-4" /> Download Sheet
+          <Download className="w-4 h-4" /> {mode === 'PHOTOBOOTH' ? 'Download Photo' : 'Download Sheet'}
         </button>
       </div>
 
       <div className="overflow-auto w-full flex justify-center bg-neutral-100 p-8 border border-neutral-200 print:p-0 print:border-none print:bg-white print:overflow-visible">
+        {mode === 'PHOTOBOOTH' ? (
+           <div 
+             ref={printRef}
+             className="bg-white p-12 flex flex-col items-center justify-center shadow-xl print:shadow-none print:w-full print:h-full print:p-0"
+             style={{
+               width: '794px', 
+               minHeight: '1123px', // Standard A4 height
+             }}
+           >
+              {data.frames[0] && (
+                <div className="relative w-full max-w-[90%] shadow-lg print:shadow-none bg-white p-4">
+                     <img src={data.frames[0]} alt="Print" className="w-full h-auto" />
+                </div>
+              )}
+           </div>
+        ) : (
         <div 
           ref={printRef}
           className="bg-white p-6 grid grid-cols-3 gap-0 shadow-xl print:shadow-none print:w-full print:h-full print:p-6"
@@ -176,6 +201,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ data, frameStyle }) =>
              <div key={`empty-${i}`} className="border-r border-b border-dashed border-neutral-100 aspect-video"></div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

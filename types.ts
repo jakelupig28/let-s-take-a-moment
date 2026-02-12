@@ -6,6 +6,8 @@ export enum AppStep {
   PRINT = 'PRINT'
 }
 
+export type AppMode = 'FLIPBOOK' | 'PHOTOBOOTH';
+
 export interface FrameStyle {
   id: string;
   name: string;
